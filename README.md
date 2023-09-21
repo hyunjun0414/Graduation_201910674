@@ -30,4 +30,4 @@ X
 
 # 진도보고서
 - 9/20 : flutter와 firebase 연동, google cloud platform(번역기능과, 텍스트 추출기능을 위함) 가입, 파이썬 beautifulsoap(크롤링을 위함)패키지설치
-- 9/21 : 카메라 기능구현
+- 9/21 : 메뉴판 촬영을 위한 카메라 기능구현
