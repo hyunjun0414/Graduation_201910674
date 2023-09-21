@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "366347200362",
+    "project_id": "hanseisimplerecipe",
+    "storage_bucket": "hanseisimplerecipe.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:366347200362:android:563aa88d5e6ad42f4d2713",
+        "android_client_info": {
+          "package_name": "com.example.menumate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "366347200362-v16d2cq8ls9shrgsddp74h9nrt08jvrf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8Ps9kB2MtKRmaZpktgWXGCVBmwIgvd2s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "366347200362-v16d2cq8ls9shrgsddp74h9nrt08jvrf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "366347200362-07uf3u7dsovon9503ps91l4dhj9jnj8m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.simplerecipe"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:366347200362:android:9b06f6cc545532594d2713",
+        "android_client_info": {
+          "package_name": "com.example.simplerecipe"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "366347200362-v16d2cq8ls9shrgsddp74h9nrt08jvrf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8Ps9kB2MtKRmaZpktgWXGCVBmwIgvd2s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "366347200362-v16d2cq8ls9shrgsddp74h9nrt08jvrf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "366347200362-07uf3u7dsovon9503ps91l4dhj9jnj8m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.simplerecipe"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
