@@ -14,7 +14,8 @@
 - 개발 툴 : Visual Studio Code, Android Studio
 
 # 시스템 구성도
-![image](https://github.com/hyunjun0414/MenuMate/assets/80450602/256489a0-8a75-4e55-b963-84d061d0f6de)
+![시스템 구성도](https://github.com/hyunjun0414/Graduation_201910674/assets/80450602/645142ff-4186-438a-9d89-15e0b50e6842)
+
 
 
 # 구현결과
