@@ -1,12 +1,17 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:camera/camera.dart';
+import 'package:menumate/vision_api.dart';
+import 'package:menumate/firestore_data.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
+    await dotenv.load(fileName: ".env");
     final cameras = await availableCameras();
     final firstCamera = cameras.first;
     await Firebase.initializeApp(
@@ -63,7 +68,7 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('카메라 화면')),
+      appBar: AppBar(title: const Text('')),
       body: Column(
         children: [
           FutureBuilder<void>(
@@ -109,16 +114,58 @@ class MyAppState extends State<MyApp> {
 
 // --------------------------------
 // 찍은 사진 보여주는 위젯
-class DisplayPictureScreen extends StatelessWidget {
+class DisplayPictureScreen extends StatefulWidget {
   final String imagePath;
 
   const DisplayPictureScreen({super.key, required this.imagePath});
 
   @override
+  DisplayPictureScreenState createState() => DisplayPictureScreenState();
+}
+
+class DisplayPictureScreenState extends State<DisplayPictureScreen> {
+  String? extractedText;
+  DocumentSnapshot? firestoreData;
+
+  @override
+  void initState() {
+    super.initState();
+    _processImage();
+  }
+
+  _processImage() async {
+    String? apiKey = dotenv.env['APP_KEY'];
+
+    extractedText = await extractTextFromImage(widget.imagePath, apiKey!);
+
+    if (extractedText != null) {
+      final firestoreService = FirestoreService();
+      firestoreData = await firestoreService.fetchDataBasedOnText(extractedText!);
+      setState(() {}); // Update the state
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('캡쳐 화면')),
-      body: Image.file(File(imagePath)),
+      appBar: AppBar(title: const Text('Menu description')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Image.file(File(widget.imagePath)),
+            if (extractedText != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(extractedText!),
+              ),
+            if (firestoreData != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text('Firestore Data: ${firestoreData!.data()}'),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
