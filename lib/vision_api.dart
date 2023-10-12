@@ -37,4 +37,3 @@ Future<String?> extractTextFromImage(String imagePath, String apiKey) async {
     return null;
   }
 }
-
