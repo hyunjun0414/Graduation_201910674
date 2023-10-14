@@ -4,11 +4,14 @@ class FirestoreService {
   final _firestore = FirebaseFirestore.instance;
 
   Future<DocumentSnapshot?> fetchDataBasedOnText(String text) async {
-    // Use the text directly as the document ID to fetch data
-    final docSnap = await _firestore.collection('foods').doc(text).get();
-
-    if (docSnap.exists) {
-      return docSnap;
+    try {
+      final docSnap = await _firestore.collection('foods').doc(text).get();
+      if (docSnap.exists) {
+        return docSnap;
+      }
+    } catch (e) {
+      print("Error fetching data from Firestore: $e");
+      // 여기서 추가적으로 사용자에게 오류 메시지를 표시할 수 있습니다.
     }
     return null;
   }

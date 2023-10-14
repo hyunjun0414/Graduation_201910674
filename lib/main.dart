@@ -1,13 +1,9 @@
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'menu_description.dart';
 import 'package:camera/camera.dart';
-import 'package:menumate/vision_api.dart';
-import 'package:menumate/firestore_data.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:menumate/menu_description.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,10 +16,10 @@ void main() async {
     );
     runApp(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: MyApp(
           camera: firstCamera,
         ),
-        debugShowCheckedModeBanner: false,
       ),
     );
   } catch (error) {
@@ -31,7 +27,6 @@ void main() async {
   }
 }
 
-// 카메라 화면
 class MyApp extends StatefulWidget {
   const MyApp({
     super.key,
@@ -41,10 +36,10 @@ class MyApp extends StatefulWidget {
   final CameraDescription camera;
 
   @override
-  MyAppState createState() => MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
-class MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
 
@@ -67,12 +62,14 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Take a photo of the menu',
-      style: TextStyle(
-        fontSize: 30,
-        fontWeight: FontWeight.bold,
-      ),
-      ),
+      appBar: AppBar(
+        title: const Text(
+          'Take a photo of the menu',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
       body: Column(
@@ -87,19 +84,28 @@ class MyAppState extends State<MyApp> {
               }
             },
           ),
-          FloatingActionButton(
-            onPressed: () async {
-              try {
-                await _initializeControllerFuture;
-                await _controller.takePicture();
-                await Navigator.of(context).push(MaterialPageRoute(builder: (context) => MenuDescriptionScreen()));
-              } catch (e) {
-                print(e);
-              }
-            },
-            child: const Icon(Icons.camera_alt),
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          try {
+            await _initializeControllerFuture;
+            final image = await _controller.takePicture();
+
+            if (!mounted) return;
+
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DisplayPictureScreen(
+                  imagePath: image.path,
+                ),
+              ),
+            );
+          } catch (e) {
+            print(e);
+          }
+        },
+        child: const Icon(Icons.camera_alt),
       ),
     );
   }
