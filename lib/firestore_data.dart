@@ -4,10 +4,11 @@ class FirestoreService {
   final _firestore = FirebaseFirestore.instance;
 
   Future<DocumentSnapshot?> fetchDataBasedOnText(String text) async {
-    // Example: Fetch data from 'texts' collection where 'content' field matches the text
-    final querySnap = await _firestore.collection('texts').where('content', isEqualTo: text).get();
-    if (querySnap.docs.isNotEmpty) {
-      return querySnap.docs.first;
+    // Use the text directly as the document ID to fetch data
+    final docSnap = await _firestore.collection('foods').doc(text).get();
+
+    if (docSnap.exists) {
+      return docSnap;
     }
     return null;
   }
