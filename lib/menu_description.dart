@@ -10,10 +10,10 @@ class DisplayPictureScreen extends StatefulWidget {
   const DisplayPictureScreen({super.key, required this.imagePath});
 
   @override
-  _DisplayPictureScreenState createState() => _DisplayPictureScreenState();
+  DisplayPictureScreenState createState() => DisplayPictureScreenState();
 }
 
-class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
+class DisplayPictureScreenState extends State<DisplayPictureScreen> {
   String? extractedText;
   DocumentSnapshot? firestoreData;
   final bool hasAllergyInfo = true; // 알러지 정보가 있는지 여부를 나타내는 변수
@@ -41,7 +41,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.lightBlueAccent,
+        backgroundColor: Color(0xffCDF5F9),
         body: SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.all(16.0),
@@ -51,38 +51,38 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
                 SizedBox(height: 30),
                 Icon(
                   Icons.account_circle,
-                  size: 100,
-                  color: Colors.white,
+                  size: 200,
+                  color: Colors.black38,
                 ),
                 SizedBox(height: 5),
                 Text(
                   (firestoreData?.data() as Map<String, dynamic>?)?['name'] ?? 'MenuName',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 35,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 17),
                 Text(
                   (firestoreData?.data() as Map<String, dynamic>?)?['allergens'] ?? '알러지가 없습니다.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 28,
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 SizedBox(
-                  height: 20,
+                  height: 17,
                 ),
                 Text(
                   (firestoreData?.data() as Map<String, dynamic>?)?['description'] ?? 'MenuName',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
+                    fontSize: 25,
+                    color: Colors.black,
                   ),
                 ),
               ],
