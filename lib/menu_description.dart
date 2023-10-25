@@ -50,7 +50,7 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
               children: [
                 SizedBox(height: 30),
                 Icon(
-                  Icons.account_circle,
+                  Icons.restaurant,
                   size: 200,
                   color: Colors.black38,
                 ),
