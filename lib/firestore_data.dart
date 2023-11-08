@@ -15,4 +15,10 @@ class FirestoreService {
     }
     return null;
   }
+  Future<void> saveExtractedText(String text) async {
+    await FirebaseFirestore.instance.collection('feedbacks').add({
+      'extractedText': text,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
 }
