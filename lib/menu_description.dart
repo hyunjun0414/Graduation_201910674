@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:menumate/vision_api.dart';
 import 'package:menumate/firestore_data.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DescriptionPage extends StatefulWidget {
   final String imagePath;
+  final String extractedText;
 
-  const DescriptionPage({super.key, required this.imagePath});
+  const DescriptionPage(
+      {super.key, required this.imagePath, required this.extractedText});
 
   @override
   DescriptionPageState createState() => DescriptionPageState();
@@ -16,7 +16,7 @@ class DescriptionPage extends StatefulWidget {
 
 class DescriptionPageState extends State<DescriptionPage> {
   String? extractedText;
-  DocumentSnapshot? firestoreData;
+  List<DocumentSnapshot> firestoreData = [];
   final bool hasAllergyInfo = true; // 알러지 정보가 있는지 여부를 나타내는 변수
   bool isLoading = true; // 로딩 상태를 true로 초기화합니다.
 
@@ -27,21 +27,29 @@ class DescriptionPageState extends State<DescriptionPage> {
   }
 
   _processImage() async {
+    if (!mounted) return;
     setState(() {
-      isLoading = true; // 이미지 처리 시작 시 로딩 상태를 true로 설정합니다.
+      isLoading = true;
     });
 
-    String? apiKey = dotenv.env['APP_KEY'];
-    extractedText = await extractTextFromImage(widget.imagePath, apiKey!);
+    extractedText = widget.extractedText;
 
     if (extractedText != null) {
       final firestoreService = FirestoreService();
-      firestoreData =
-          await firestoreService.fetchDataBasedOnText(extractedText!);
-    }
+      List<String> words = extractedText!.split(RegExp(r'\s+'));
 
+      for (String word in words) {
+        if (word.isNotEmpty) {
+          var data = await firestoreService.fetchDataBasedOnWords(word);
+          if (data != null) {
+            firestoreData.add(data);
+          }
+        }
+      }
+    }
+    if (!mounted) return;
     setState(() {
-      isLoading = false; // 이미지 처리 완료 시 로딩 상태를 false로 설정합니다.
+      isLoading = false;
     });
   }
 
@@ -59,7 +67,7 @@ class DescriptionPageState extends State<DescriptionPage> {
     }
 
     // 로딩이 끝났지만 데이터가 없을 때의 화면을 보여줍니다.
-    if (firestoreData == null) {
+    if (firestoreData.isEmpty) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -92,51 +100,49 @@ class DescriptionPageState extends State<DescriptionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: 30),
-                Icon(
-                  Icons.restaurant,
-                  size: 200,
-                  color: Colors.black38,
-                ),
-                SizedBox(height: 5),
-                Text(
-                  (firestoreData?.data() as Map<String, dynamic>?)?['name'] ??
-                      'MenuName',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(height: 17),
-                Text(
-                  (firestoreData?.data()
-                          as Map<String, dynamic>?)?['allergens'] ??
-                      '알러지가 없습니다.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 17),
-                Text(
-                  (firestoreData?.data()
-                          as Map<String, dynamic>?)?['description'] ??
-                      'MenuName',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 25,
-                    color: Colors.black,
-                  ),
-                ),
+                for (var data in firestoreData) _buildItemWidget(data),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildItemWidget(DocumentSnapshot data) {
+    var itemData = data.data() as Map<String, dynamic>;
+    return Column(
+      children: [
+        Icon(Icons.restaurant, size: 200, color: Colors.black38),
+        SizedBox(height: 5),
+        Text(
+          itemData['name'] ?? 'MenuName',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 35,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        Text(
+          itemData['allergens'] ?? 'allergens',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 35,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        Text(
+          itemData['description'] ?? 'description',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 35,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+      ],
     );
   }
 
