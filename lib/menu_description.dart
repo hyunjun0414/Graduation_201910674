@@ -5,16 +5,16 @@ import 'package:menumate/firestore_data.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DisplayPictureScreen extends StatefulWidget {
+class DescriptionPage extends StatefulWidget {
   final String imagePath;
 
-  const DisplayPictureScreen({super.key, required this.imagePath});
+  const DescriptionPage({super.key, required this.imagePath});
 
   @override
-  DisplayPictureScreenState createState() => DisplayPictureScreenState();
+  DescriptionPageState createState() => DescriptionPageState();
 }
 
-class DisplayPictureScreenState extends State<DisplayPictureScreen> {
+class DescriptionPageState extends State<DescriptionPage> {
   String? extractedText;
   DocumentSnapshot? firestoreData;
   final bool hasAllergyInfo = true; // 알러지 정보가 있는지 여부를 나타내는 변수

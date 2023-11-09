@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:menumate/menu_description.dart';
+import 'package:menumate/display_picture_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
