@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:menumate/firestore_data.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,7 +18,7 @@ class DescriptionPage extends StatefulWidget {
 class DescriptionPageState extends State<DescriptionPage> {
   String? extractedText;
   List<DocumentSnapshot> firestoreData = [];
-  final bool hasAllergyInfo = true; // 알러지 정보가 있는지 여부를 나타내는 변수
+  List<String> notFoundTexts = []; // Firestore에서 찾지 못한 텍스트를 저장하는 리스트
   bool isLoading = true; // 로딩 상태를 true로 초기화합니다.
 
   @override
@@ -37,15 +38,19 @@ class DescriptionPageState extends State<DescriptionPage> {
     if (extractedText != null) {
       final firestoreService = FirestoreService();
       List<String> words = extractedText!.split(RegExp(r'\s+'));
+      List<String> foundWords = [];
 
       for (String word in words) {
         if (word.isNotEmpty) {
           var data = await firestoreService.fetchDataBasedOnWords(word);
           if (data != null) {
             firestoreData.add(data);
+            foundWords.add(word);
           }
         }
       }
+
+      notFoundTexts = words.toSet().difference(foundWords.toSet()).toList();
     }
     if (!mounted) return;
     setState(() {
@@ -76,11 +81,29 @@ class DescriptionPageState extends State<DescriptionPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("죄송합니다 일치하는 데이터가 없습니다. 아래 버튼을 누르면 chrome에서 검색해 드릴게요"),
-                SizedBox(height: 50),
+                SizedBox(height: 100,),
+                // 버튼과 텍스트 사이의 간격
+                Text(
+                  "There are no matching data. Click the button to let the developer know",
+                  textAlign: TextAlign.center,style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                ),
+                SizedBox(height: 80),
                 ElevatedButton(
-                  onPressed: _requestFeedback,
-                  child: Text("chrome 브라우저에서 검색"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueGrey
+                  ),
+                  onPressed: _saveRemainingTexts,
+                  child: Text("inform the developer"),
+                ),
+                SizedBox(height: 150),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // 현재 화면을 닫고 이전 화면으로 돌아갑니다.
+                  },
+                  child: Text('Return to previous screen'),
                 ),
               ],
             ),
@@ -93,7 +116,7 @@ class DescriptionPageState extends State<DescriptionPage> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Color(0xffCDF5F9),
+        backgroundColor: Colors.white60,
         body: SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.all(16.0),
@@ -101,6 +124,7 @@ class DescriptionPageState extends State<DescriptionPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var data in firestoreData) _buildItemWidget(data),
+                if (notFoundTexts.isNotEmpty) _buildSaveButton(),
               ],
             ),
           ),
@@ -109,54 +133,129 @@ class DescriptionPageState extends State<DescriptionPage> {
     );
   }
 
+  Widget _buildSaveButton() {
+    return ElevatedButton(
+      onPressed: _saveRemainingTexts,
+      child: Text(
+        "There are also foods that cannot be found. Click the button to leave feedback to the developers",
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   Widget _buildItemWidget(DocumentSnapshot data) {
     var itemData = data.data() as Map<String, dynamic>;
-    return Column(
-      children: [
-        Icon(Icons.restaurant, size: 200, color: Colors.black38),
-        SizedBox(height: 5),
-        Text(
-          itemData['name'] ?? 'MenuName',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 35,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+    var imageUrl = itemData['imageUrl'] ??
+        'https://cdn-icons-png.flaticon.com/512/1996/1996055.png';
+    return Card(
+      elevation: 4.0, // 카드의 그림자 깊이
+      margin: EdgeInsets.all(8.0), // 카드 주변의 여백
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0), // 카드의 모서리 둥글게
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16.0), // 카드 내부의 패딩
+        child: Column(
+          children: [
+            // Firebase Storage에서 이미지를 불러와서 표시
+            FutureBuilder(
+              future: _loadImage(imageUrl),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done &&
+                    snapshot.hasData) {
+                  return Image.network(snapshot.data as String);
+                } else {
+                  return CircularProgressIndicator();
+                }
+              },
+            ),
+            SizedBox(height: 5),
+            Text(
+              itemData['name'] ?? 'MenuName',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            Text(
+              itemData['allergens'] ?? 'No allergens',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            Text(
+              itemData['description'] ?? 'description',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
         ),
-        Text(
-          itemData['allergens'] ?? 'allergens',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 35,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        Text(
-          itemData['description'] ?? 'description',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 35,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+// Firebase Storage에서 이미지 URL을 불러오는 함수
+  Future<String> _loadImage(String imagePath) async {
+    try {
+      if (imagePath.startsWith('gs://')) {
+        return await FirebaseStorage.instance
+            .refFromURL(imagePath)
+            .getDownloadURL();
+      }
+      // Firebase Storage URL이 아닌 경우 기본 이미지 URL을 반환
+      return 'https://cdn-icons-png.flaticon.com/512/1996/1996055.png'; // 여기에 적절한 기본 이미지 URL을 설정하세요.
+    } catch (e) {
+      print("Error loading image: $e");
+      // 오류가 발생한 경우에도 기본 이미지 URL을 반환
+      return 'https://cdn-icons-png.flaticon.com/512/1996/1996055.png'; // 여기에 적절한 기본 이미지 URL을 설정하세요.
+    }
   }
 
   void _requestFeedback() async {
     // Firestore에 추출된 텍스트 저장
     final firestoreService = FirestoreService();
     await firestoreService.saveExtractedText(extractedText!);
+  }
 
-    // 크롬에서 추출된 텍스트로 검색
-    String searchUrl = "https://www.google.com/search?q=$extractedText";
-    if (await canLaunchUrl(Uri.parse(searchUrl))) {
-      await launchUrl(Uri.parse(searchUrl));
-    } else {
-      throw 'Could not launch $searchUrl';
+  void _saveRemainingTexts() async {
+    // 기존 기능 실행
+    String remainingTexts =
+        notFoundTexts.join(" ").replaceAll(RegExp(r'\d+'), '').trim();
+    if (remainingTexts.isNotEmpty) {
+      final firestoreService = FirestoreService();
+      await firestoreService.saveExtractedText(remainingTexts);
     }
+
+    // 알림창 표시 함수 호출
+    _showAlert();
+  }
+
+  void _showAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Thank you"),
+          content: Text("Your feedback has been sent to the developers."),
+          actions: <Widget>[
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop(); // 대화 상자를 닫습니다.
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

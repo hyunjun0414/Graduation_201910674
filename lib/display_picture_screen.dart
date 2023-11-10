@@ -26,6 +26,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   }
 
   void completeSelection() async {
+    if(!mounted) return;
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final imageFile = File(widget.imagePath);
@@ -45,17 +46,16 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
     // 이제 'selectedRect'를 사용하여 텍스트 추출
     final extractedText = await extractTextFromImage(
-        widget.imagePath, dotenv.env['APP_KEY']!, selectedRect
-
-    );
+        widget.imagePath, dotenv.env['APP_KEY']!, selectedRect);
+    if (!mounted) return;
     print('Image size: ${image.width} x ${image.height}');
     print('Widget size: ${size.width} x ${size.height}');
     print('xRatio: $xRatio');
     print('yRatio: $yRatio');
-    print('Selection rect: ${selectionRect!.left}, ${selectionRect!.top}, ${selectionRect!.right}, ${selectionRect!.bottom}');
-    print('Transformed rect: ${selectedRect.left}, ${selectedRect.top}, ${selectedRect.right}, ${selectedRect.bottom}');
-
-
+    print(
+        'Selection rect: ${selectionRect!.left}, ${selectionRect!.top}, ${selectionRect!.right}, ${selectionRect!.bottom}');
+    print(
+        'Transformed rect: ${selectedRect.left}, ${selectedRect.top}, ${selectedRect.right}, ${selectedRect.bottom}');
 
     // DescriptionPage로 화면 전환하면서 추출된 텍스트를 전달
     if (extractedText != null) {
@@ -72,11 +72,18 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       // 에러 처리 (예: 사용자에게 알림 표시)
     }
   }
-
+  @override
+  void dispose() {
+    // 필요한 정리 작업을 수행
+    // 예를 들어, 비동기 작업을 취소하거나 리소스를 해제
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Capture Screen')),
+      appBar: AppBar(title: const Text('Drag to select text'),
+      centerTitle: true,
+      ),
       body: GestureDetector(
         onPanStart: (details) {
           // Record the position where the drag starts
@@ -125,16 +132,27 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
                   ),
                 ),
               ),
+            Positioned(
+              bottom: 20, // 하단에서부터 20px의 여백
+              left: 130,
+              right: 130,
+              child: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // 현재 스택에서 이 페이지를 제거하여 이전 화면으로 돌아감
+                  },
+                  child: Row(
+                    children: [
+                      Icon(Icons.camera_alt_outlined),
+                      SizedBox(width: 10,),
+                      Text('Reshoot'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigate back to the previous screen
-          Navigator.of(context).pop();
-        },
-        tooltip: 'Retake picture',
-        child: const Icon(Icons.camera_alt),
       ),
     );
   }
