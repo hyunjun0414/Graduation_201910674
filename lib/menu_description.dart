@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:menumate/firestore_data.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class DescriptionPage extends StatefulWidget {
   final String imagePath;
@@ -18,6 +17,7 @@ class DescriptionPage extends StatefulWidget {
 class DescriptionPageState extends State<DescriptionPage> {
   String? extractedText;
   List<DocumentSnapshot> firestoreData = [];
+  Map<String, Map<String, String>> translatedData = {};
   List<String> notFoundTexts = []; // Firestore에서 찾지 못한 텍스트를 저장하는 리스트
   bool isLoading = true; // 로딩 상태를 true로 초기화합니다.
 
@@ -34,24 +34,44 @@ class DescriptionPageState extends State<DescriptionPage> {
     });
 
     extractedText = widget.extractedText;
+    final firestoreService = FirestoreService();
 
     if (extractedText != null) {
-      final firestoreService = FirestoreService();
       List<String> words = extractedText!.split(RegExp(r'\s+'));
       List<String> foundWords = [];
 
       for (String word in words) {
         if (word.isNotEmpty) {
-          var data = await firestoreService.fetchDataBasedOnWords(word);
-          if (data != null) {
-            firestoreData.add(data);
+          var doc = await firestoreService.fetchDataBasedOnWords(word);
+          if (doc != null) {
+            firestoreData.add(doc);
             foundWords.add(word);
+            //firestore 에서 가져온 데이터 번역 수행
+            var data = doc.data() as Map<String, dynamic>;
+            String imageUrl = data['imageUrl'] ??
+                'https://cdn-icons-png.flaticon.com/512/1996/1996055.png';
+            String allergens = data['allergens'] ?? 'No Allergens';
+            String translatedName =
+                await firestoreService.translateText(data['name'], 'en');
+            String translatedAllergens = allergens.isNotEmpty
+                ? await firestoreService.translateText(allergens, 'en')
+                : allergens;
+            String translatedDescription =
+                await firestoreService.translateText(data['description'], 'en');
+
+            translatedData[doc.id] = {
+              'name': translatedName,
+              'allergens': translatedAllergens,
+              'description': translatedDescription,
+              'imageUrl': imageUrl // imageUrl 추가
+            };
           }
         }
       }
 
       notFoundTexts = words.toSet().difference(foundWords.toSet()).toList();
     }
+
     if (!mounted) return;
     setState(() {
       isLoading = false;
@@ -60,7 +80,6 @@ class DescriptionPageState extends State<DescriptionPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 로딩 상태일 때 로딩 인디케이터를 보여줍니다.
     if (isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -71,48 +90,50 @@ class DescriptionPageState extends State<DescriptionPage> {
       );
     }
 
-    // 로딩이 끝났지만 데이터가 없을 때의 화면을 보여줍니다.
     if (firestoreData.isEmpty) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: Color(0xffCDF5F9),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(height: 100,),
-                // 버튼과 텍스트 사이의 간격
-                Text(
-                  "There are no matching data. Click the button to let the developer know",
-                  textAlign: TextAlign.center,style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                ),
-                SizedBox(height: 80),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueGrey
-                  ),
-                  onPressed: _saveRemainingTexts,
-                  child: Text("inform the developer"),
-                ),
-                SizedBox(height: 150),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // 현재 화면을 닫고 이전 화면으로 돌아갑니다.
-                  },
-                  child: Text('Return to previous screen'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      return _buildNoDataScreen();
     }
 
-    // 데이터가 있을 때의 화면을 보여줍니다.
+    return _buildDataScreen();
+  }
+
+  MaterialApp _buildNoDataScreen() {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xffCDF5F9),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 100),
+              Text(
+                "There are no matching data. Click the button to let the developer know",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 80),
+              ElevatedButton(
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+                onPressed: _saveRemainingTexts,
+                child: Text("Inform the developer"),
+              ),
+              SizedBox(height: 150),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Return to previous screen
+                },
+                child: Text('Return to previous screen'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  MaterialApp _buildDataScreen() {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
@@ -123,7 +144,7 @@ class DescriptionPageState extends State<DescriptionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (var data in firestoreData) _buildItemWidget(data),
+                for (var doc in firestoreData) _buildItemWidget(doc.id),
                 if (notFoundTexts.isNotEmpty) _buildSaveButton(),
               ],
             ),
@@ -135,29 +156,31 @@ class DescriptionPageState extends State<DescriptionPage> {
 
   Widget _buildSaveButton() {
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
       onPressed: _saveRemainingTexts,
       child: Text(
-        "There are also foods that cannot be found. Click the button to leave feedback to the developers",
+        "There are also foods that cannot be found. Click the here to leave feedback to the developers",
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  Widget _buildItemWidget(DocumentSnapshot data) {
-    var itemData = data.data() as Map<String, dynamic>;
-    var imageUrl = itemData['imageUrl'] ??
+  Widget _buildItemWidget(String docId) {
+    var translatedItemData = translatedData[docId];
+    // imageUrl이 translatedData에 포함되도록 변경합니다.
+    var imageUrl = translatedItemData?['imageUrl'] ??
         'https://cdn-icons-png.flaticon.com/512/1996/1996055.png';
+
     return Card(
-      elevation: 4.0, // 카드의 그림자 깊이
-      margin: EdgeInsets.all(8.0), // 카드 주변의 여백
+      elevation: 4.0,
+      margin: EdgeInsets.all(8.0),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0), // 카드의 모서리 둥글게
+        borderRadius: BorderRadius.circular(10.0),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16.0), // 카드 내부의 패딩
+        padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Firebase Storage에서 이미지를 불러와서 표시
             FutureBuilder(
               future: _loadImage(imageUrl),
               builder: (context, snapshot) {
@@ -171,7 +194,7 @@ class DescriptionPageState extends State<DescriptionPage> {
             ),
             SizedBox(height: 5),
             Text(
-              itemData['name'] ?? 'MenuName',
+              translatedItemData?['name'] ?? 'MenuName',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -180,7 +203,7 @@ class DescriptionPageState extends State<DescriptionPage> {
               ),
             ),
             Text(
-              itemData['allergens'] ?? 'No allergens',
+              translatedItemData?['allergens'] ?? 'No allergens',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -189,7 +212,7 @@ class DescriptionPageState extends State<DescriptionPage> {
               ),
             ),
             Text(
-              itemData['description'] ?? 'description',
+              translatedItemData?['description'] ?? 'Description',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -203,39 +226,29 @@ class DescriptionPageState extends State<DescriptionPage> {
     );
   }
 
-// Firebase Storage에서 이미지 URL을 불러오는 함수
-  Future<String> _loadImage(String imagePath) async {
+  Future<String> _loadImage(String imageUrl) async {
     try {
-      if (imagePath.startsWith('gs://')) {
+      // 이미지 URL이 'gs://'로 시작하는 경우만 Firebase Storage에서 URL 가져오기
+      if (imageUrl.startsWith('gs://')) {
         return await FirebaseStorage.instance
-            .refFromURL(imagePath)
+            .refFromURL(imageUrl)
             .getDownloadURL();
       }
-      // Firebase Storage URL이 아닌 경우 기본 이미지 URL을 반환
-      return 'https://cdn-icons-png.flaticon.com/512/1996/1996055.png'; // 여기에 적절한 기본 이미지 URL을 설정하세요.
+      // 이미 완전한 URL이라면 그대로 사용
+      return imageUrl;
     } catch (e) {
       print("Error loading image: $e");
-      // 오류가 발생한 경우에도 기본 이미지 URL을 반환
-      return 'https://cdn-icons-png.flaticon.com/512/1996/1996055.png'; // 여기에 적절한 기본 이미지 URL을 설정하세요.
+      return 'https://cdn-icons-png.flaticon.com/512/1996/1996055.png'; // 오류 시 기본 이미지 URL 반환
     }
   }
 
-  void _requestFeedback() async {
-    // Firestore에 추출된 텍스트 저장
-    final firestoreService = FirestoreService();
-    await firestoreService.saveExtractedText(extractedText!);
-  }
-
   void _saveRemainingTexts() async {
-    // 기존 기능 실행
     String remainingTexts =
         notFoundTexts.join(" ").replaceAll(RegExp(r'\d+'), '').trim();
     if (remainingTexts.isNotEmpty) {
       final firestoreService = FirestoreService();
       await firestoreService.saveExtractedText(remainingTexts);
     }
-
-    // 알림창 표시 함수 호출
     _showAlert();
   }
 
@@ -250,7 +263,7 @@ class DescriptionPageState extends State<DescriptionPage> {
             TextButton(
               child: Text("OK"),
               onPressed: () {
-                Navigator.of(context).pop(); // 대화 상자를 닫습니다.
+                Navigator.of(context).pop();
               },
             ),
           ],
