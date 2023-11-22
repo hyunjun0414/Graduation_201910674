@@ -16,6 +16,7 @@ class DescriptionPage extends StatefulWidget {
 
 class DescriptionPageState extends State<DescriptionPage> {
   String? extractedText;
+  String selectedLanguage = 'en'; // 기본값은 영어('en')로 설정
   List<DocumentSnapshot> firestoreData = [];
   Map<String, Map<String, String>> translatedData = {};
   List<String> notFoundTexts = []; // Firestore에서 찾지 못한 텍스트를 저장하는 리스트
@@ -46,24 +47,23 @@ class DescriptionPageState extends State<DescriptionPage> {
           if (doc != null) {
             firestoreData.add(doc);
             foundWords.add(word);
-            //firestore 에서 가져온 데이터 번역 수행
+            // firestore에서 가져온 데이터 번역 수행
             var data = doc.data() as Map<String, dynamic>;
-            String imageUrl = data['imageUrl'] ??
-                'https://cdn-icons-png.flaticon.com/512/1996/1996055.png';
+            String imageUrl = data['imageUrl'] ?? 'https://cdn-icons-png.flaticon.com/512/1996/1996055.png';
             String allergens = data['allergens'] ?? 'No Allergens';
             String translatedName =
-                await firestoreService.translateText(data['name'], 'en');
+            await firestoreService.translateText(data['name'], selectedLanguage); // 언어 변경
             String translatedAllergens = allergens.isNotEmpty
-                ? await firestoreService.translateText(allergens, 'en')
+                ? await firestoreService.translateText(allergens, selectedLanguage) // 언어 변경
                 : allergens;
             String translatedDescription =
-                await firestoreService.translateText(data['description'], 'en');
+            await firestoreService.translateText(data['description'], selectedLanguage); // 언어 변경
 
             translatedData[doc.id] = {
               'name': translatedName,
               'allergens': translatedAllergens,
               'description': translatedDescription,
-              'imageUrl': imageUrl // imageUrl 추가
+              'imageUrl': imageUrl
             };
           }
         }
@@ -144,6 +144,23 @@ class DescriptionPageState extends State<DescriptionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 언어 선택 드롭다운 추가
+                DropdownButton<String>(
+                  value: selectedLanguage,
+                  items: <String>['en', 'ja', 'zh']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedLanguage = newValue!;
+                      _processImage(); // 언어가 변경되면 이미지 처리 로직 재실행
+                    });
+                  },
+                ),
                 for (var doc in firestoreData) _buildItemWidget(doc.id),
                 if (notFoundTexts.isNotEmpty) _buildSaveButton(),
               ],
@@ -271,4 +288,5 @@ class DescriptionPageState extends State<DescriptionPage> {
       },
     );
   }
+
 }

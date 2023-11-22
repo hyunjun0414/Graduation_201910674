@@ -30,7 +30,6 @@ class FirestoreService {
     final apiKey = dotenv.env['APP_KEY'] ?? '';
     final url = Uri.parse('https://translation.googleapis.com/language/translate/v2?key=$apiKey');
 
-
     try {
       final response = await http.post(
         url,
@@ -47,12 +46,15 @@ class FirestoreService {
         final data = jsonDecode(response.body);
         return data['data']['translations'][0]['translatedText'];
       } else {
-        print('Translation API error: ${response.statusCode}'); // 에러 로그
-        return 'Error: Unable to translate'; // 적절한 기본 메시지 제공 또는 적절히 처리
+        // 상세한 오류 메시지를 포함하여 로그를 남깁니다.
+        print('Translation API error: ${response.statusCode}, ${response.body}');
+        return 'Error: Unable to translate';
       }
     } catch (e) {
-      print('Translation API exception: $e'); // 예외 로그
-      return 'Exception: Unable to translate'; // 예외 처리
+      // 네트워크 오류나 기타 예외에 대한 처리
+      print('Translation API exception: $e');
+      return 'Exception: Unable to translate';
     }
   }
+
 }
