@@ -29,7 +29,7 @@
         </intent>
     </queries>
     <application
-        android:label="menumate"
+        android:label="Menu\nMate"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

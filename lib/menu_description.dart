@@ -142,16 +142,31 @@ class DescriptionPageState extends State<DescriptionPage> {
           child: Padding(
             padding: EdgeInsets.all(16.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                SizedBox(height: 20,),
                 // 언어 선택 드롭다운 추가
                 DropdownButton<String>(
                   value: selectedLanguage,
                   items: <String>['en', 'ja', 'zh']
                       .map<DropdownMenuItem<String>>((String value) {
+                    String displayValue;
+                    switch (value) {
+                      case 'en':
+                        displayValue = 'English';
+                        break;
+                      case 'ja':
+                        displayValue = '日本語';
+                        break;
+                      case 'zh':
+                        displayValue = '中文';
+                        break;
+                      default:
+                        displayValue = value;
+                    }
                     return DropdownMenuItem<String>(
                       value: value,
-                      child: Text(value),
+                      child: Text(displayValue),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
